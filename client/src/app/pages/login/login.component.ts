@@ -1,26 +1,55 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { Component, OnInit, inject } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { LocalstorageService } from '../../services/localstorage.service';
+import { UsersService } from '../../services/users.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    HttpClientModule
+  ],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
-form: FormGroup;
+export class LoginComponent implements OnInit {
+  private formBuilder = inject(FormBuilder);
+  private localStorageService = inject(LocalstorageService);
+  private userService = inject(UsersService);
+  loginForm!: FormGroup;
 
-constructor(private fb: FormBuilder){
-  this.form = this.fb.group({
-    email: new FormControl('',[Validators.required,Validators.email,Validators.pattern('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$')]),
-    password: new FormControl('',[Validators.required,Validators.minLength(4)])
-  });
-}
+  constructor(private router: Router) {}
 
-onSubmit(){
-  if(this.form.valid){
-    console.log(this.form.value)
+  ngOnInit(): void {
+    this.loginForm = this.formBuilder.group({
+      email: ['', Validators.required],
+      password: ['', Validators.required],
+    });
   }
-}
+
+  async onSubmit() {
+    if (this.loginForm.valid) {
+      const { email, password } = this.loginForm.value;
+      console.log(this.loginForm.value);
+
+      await this.userService.login({ email, password }).subscribe(
+        () => {
+          console.log('win');
+          this.router.navigate(['/dashboard']);
+        },
+        (error) => {
+          console.log('fail');
+        }
+      );
+    }
+  }
 }
